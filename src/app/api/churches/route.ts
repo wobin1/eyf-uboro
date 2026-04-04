@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 // GET /api/churches — list all churches with member counts
 export async function GET() {
@@ -15,12 +14,17 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    type ChurchWithCounts = Prisma.ChurchGetPayload<{
-      include: {
-        _count: { select: { members: true } };
-        members: { select: { checkedIn: true } };
-      };
-    }>;
+    type ChurchWithCounts = {
+      id: string;
+      name: string;
+      pastor: string | null;
+      phone: string | null;
+      email: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      _count: { members: number };
+      members: { checkedIn: boolean }[];
+    };
 
     const result = (churches as ChurchWithCounts[]).map((church) => ({
       ...church,
