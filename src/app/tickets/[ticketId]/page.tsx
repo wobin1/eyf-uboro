@@ -61,7 +61,7 @@ export default function TicketDetailPage({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `EYF Uboro Ticket - ${ticket.firstName} ${ticket.lastName}`,
+          title: `EYF U/boro Ticket - ${ticket.firstName} ${ticket.lastName}`,
           text: `Dinner ticket for ${ticket.firstName} ${ticket.lastName} from ${ticket.church.name}. Ticket ID: ${formatTicketId(ticket.ticketId)}`,
           url: window.location.href,
         });
@@ -113,7 +113,7 @@ export default function TicketDetailPage({
             <span className="text-navy font-heading font-bold text-xl">E</span>
           </div>
           <h1 className="font-heading font-bold text-2xl text-gold">
-            EYF UBORO
+            EYF U/BORO
           </h1>
           <p className="text-sm text-text-muted">Dinner Event</p>
         </div>
