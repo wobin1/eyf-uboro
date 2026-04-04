@@ -1,0 +1,59 @@
+import { prisma } from "@/lib/prisma";
+import { NextRequest } from "next/server";
+
+// GET /api/churches — list all churches with member counts
+export async function GET() {
+  try {
+    const churches = await prisma.church.findMany({
+      include: {
+        _count: { select: { members: true } },
+        members: {
+          select: { checkedIn: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const result = churches.map((church) => ({
+      ...church,
+      memberCount: church._count.members,
+      checkedInCount: church.members.filter((m) => m.checkedIn).length,
+      members: undefined,
+      _count: undefined,
+    }));
+
+    return Response.json(result);
+  } catch (error) {
+    console.error("Failed to fetch churches:", error);
+    return Response.json({ error: "Failed to fetch churches" }, { status: 500 });
+  }
+}
+
+// POST /api/churches — create a new church
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { name, pastor, phone, email } = body;
+
+    if (!name || !name.trim()) {
+      return Response.json(
+        { error: "Church name is required" },
+        { status: 400 }
+      );
+    }
+
+    const church = await prisma.church.create({
+      data: {
+        name: name.trim(),
+        pastor: pastor?.trim() || null,
+        phone: phone?.trim() || null,
+        email: email?.trim() || null,
+      },
+    });
+
+    return Response.json(church, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create church:", error);
+    return Response.json({ error: "Failed to create church" }, { status: 500 });
+  }
+}
