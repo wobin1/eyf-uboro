@@ -7,9 +7,22 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
+  let connectionString = process.env.DATABASE_URL ?? "";
+
+  // Add libpq compatibility flag to suppress pg driver SSL warnings
+  if (!connectionString.includes("uselibpqcompat=")) {
+    const separator = connectionString.includes("?") ? "&" : "?";
+    connectionString += `${separator}uselibpqcompat=true`;
+  }
+
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
+    ssl: {
+      // Required for managed databases (e.g. Aiven) that use self-signed certificates
+      rejectUnauthorized: false,
+    },
   });
+
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
