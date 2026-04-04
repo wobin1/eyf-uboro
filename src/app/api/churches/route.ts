@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 // GET /api/churches — list all churches with member counts
 export async function GET() {
@@ -14,7 +15,14 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    const result = churches.map((church) => ({
+    type ChurchWithCounts = Prisma.ChurchGetPayload<{
+      include: {
+        _count: { select: { members: true } };
+        members: { select: { checkedIn: true } };
+      };
+    }>;
+
+    const result = (churches as ChurchWithCounts[]).map((church) => ({
       ...church,
       memberCount: church._count.members,
       checkedInCount: church.members.filter((m) => m.checkedIn).length,
@@ -22,7 +30,7 @@ export async function GET() {
       _count: undefined,
     }));
 
-    return Response.json(result);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Failed to fetch churches:", error);
     return Response.json({ error: "Failed to fetch churches" }, { status: 500 });

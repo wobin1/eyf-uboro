@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 // GET /api/stats — dashboard statistics
 export async function GET() {
@@ -29,7 +30,14 @@ export async function GET() {
       orderBy: { name: "asc" },
     });
 
-    const churchStats = churches.map((church) => ({
+    type ChurchWithCounts = Prisma.ChurchGetPayload<{
+      include: {
+        _count: { select: { members: true } };
+        members: { select: { checkedIn: true } };
+      };
+    }>;
+
+    const churchStats = (churches as ChurchWithCounts[]).map((church) => ({
       id: church.id,
       name: church.name,
       total: church._count.members,
