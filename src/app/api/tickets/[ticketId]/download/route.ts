@@ -31,17 +31,13 @@ export async function GET(
       return Response.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    // Generate QR code as PNG buffer
-    const qrBuffer = await QRCode.toBuffer(ticketId, {
-      width: 280,
+    // Generate QR code as data URL (more reliable with Satori/next/og)
+    const qrDataUrl = await QRCode.toDataURL(ticketId, {
+      width: 300,
       margin: 2,
-      color: { dark: "#0a0e27", light: "#ffffff" },
+      color: { dark: "#000000", light: "#ffffff" },
       errorCorrectionLevel: "H",
-      type: "png",
     });
-
-    const qrBase64 = qrBuffer.toString("base64");
-    const qrDataUrl = `data:image/png;base64,${qrBase64}`;
     const displayName = `${member.firstName} ${member.lastName}`;
     const churchName = member.church.name;
     const displayTicketId = formatTicketId(member.ticketId);
@@ -127,7 +123,7 @@ export async function GET(
                 textTransform: "uppercase",
               },
             },
-            "EYF Uboro"
+            "EYF U/BORO"
           ),
           React.createElement(
             "p",
@@ -165,9 +161,10 @@ export async function GET(
           },
           React.createElement("img", {
             src: qrDataUrl,
-            width: "280",
-            height: "280",
-            alt: "QR",
+            width: 300,
+            height: 300,
+            style: { display: "block" },
+            alt: "QR Code",
           })
         ),
         // Member Info
