@@ -49,7 +49,13 @@ export async function GET() {
       checkedInMembers,
       pendingMembers: totalMembers - checkedInMembers,
       churchStats,
-      recentCheckIns: recentCheckIns.map((m) => ({
+      recentCheckIns: recentCheckIns.map((m: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        checkedInAt: Date | null;
+        church: { name: string };
+      }) => ({
         id: m.id,
         name: `${m.firstName} ${m.lastName}`,
         church: m.church.name,
