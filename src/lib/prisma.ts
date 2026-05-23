@@ -10,24 +10,20 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient() {
   let connectionString = process.env.DATABASE_URL ?? "";
 
-  // Add libpq compatibility flag to suppress pg driver SSL warnings
   if (!connectionString.includes("uselibpqcompat=")) {
     const separator = connectionString.includes("?") ? "&" : "?";
     connectionString += `${separator}uselibpqcompat=true`;
   }
 
-  // Reuse the pool across hot reloads in dev to avoid connection exhaustion
   if (!globalForPrisma.pool) {
     globalForPrisma.pool = new Pool({
       connectionString,
-      ssl: {
-        // Required for managed databases (e.g. Aiven) that use self-signed certs
-        rejectUnauthorized: false,
-      },
-      // Keep pool small to stay within Aiven free-tier connection limits
+      ssl: process.env.NODE_ENV === "production"
+        ? { rejectUnauthorized: false }
+        : false, // ← disable SSL locally
       max: 3,
-      idleTimeoutMillis: 30_000,    // close idle connections after 30s
-      connectionTimeoutMillis: 10_000, // fail fast if no connection available in 10s
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
     });
   }
 

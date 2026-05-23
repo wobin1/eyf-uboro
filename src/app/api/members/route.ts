@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { getSession, isAdmin } from "@/lib/auth";
 
-// GET /api/members — list members, optionally filter by churchId
 export async function GET(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const { searchParams } = request.nextUrl;
     const churchId = searchParams.get("churchId");
     const checkedIn = searchParams.get("checkedIn");
@@ -25,9 +28,7 @@ export async function GET(request: NextRequest) {
 
     const members = await prisma.member.findMany({
       where,
-      include: {
-        church: { select: { id: true, name: true } },
-      },
+      include: { church: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -38,27 +39,22 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/members — create a new member
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const body = await request.json();
     const { firstName, lastName, phone, email, churchId } = body;
 
     if (!firstName?.trim() || !lastName?.trim()) {
-      return Response.json(
-        { error: "First name and last name are required" },
-        { status: 400 }
-      );
+      return Response.json({ error: "First name and last name are required" }, { status: 400 });
     }
 
     if (!churchId) {
-      return Response.json(
-        { error: "Church ID is required" },
-        { status: 400 }
-      );
+      return Response.json({ error: "Church ID is required" }, { status: 400 });
     }
 
-    // Verify church exists
     const church = await prisma.church.findUnique({ where: { id: churchId } });
     if (!church) {
       return Response.json({ error: "Church not found" }, { status: 404 });
@@ -72,9 +68,7 @@ export async function POST(request: NextRequest) {
         email: email?.trim() || null,
         churchId,
       },
-      include: {
-        church: { select: { id: true, name: true } },
-      },
+      include: { church: { select: { id: true, name: true } } },
     });
 
     return Response.json(member, { status: 201 });

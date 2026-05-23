@@ -1,24 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { getSession, isAdmin } from "@/lib/auth";
 
-// GET /api/members/[id]
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Params = { params: Promise<{ id: string }> };
+
+export async function GET(request: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const { id } = await params;
     const member = await prisma.member.findUnique({
       where: { id },
-      include: {
-        church: { select: { id: true, name: true } },
-      },
+      include: { church: { select: { id: true, name: true } } },
     });
 
-    if (!member) {
-      return Response.json({ error: "Member not found" }, { status: 404 });
-    }
-
+    if (!member) return Response.json({ error: "Member not found" }, { status: 404 });
     return Response.json(member);
   } catch (error) {
     console.error("Failed to fetch member:", error);
@@ -26,12 +23,11 @@ export async function GET(
   }
 }
 
-// PUT /api/members/[id]
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const { id } = await params;
     const body = await request.json();
     const { firstName, lastName, phone, email } = body;
@@ -44,9 +40,7 @@ export async function PUT(
         ...(phone !== undefined && { phone: phone?.trim() || null }),
         ...(email !== undefined && { email: email?.trim() || null }),
       },
-      include: {
-        church: { select: { id: true, name: true } },
-      },
+      include: { church: { select: { id: true, name: true } } },
     });
 
     return Response.json(member);
@@ -56,12 +50,11 @@ export async function PUT(
   }
 }
 
-// DELETE /api/members/[id]
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const { id } = await params;
     await prisma.member.delete({ where: { id } });
     return Response.json({ success: true });

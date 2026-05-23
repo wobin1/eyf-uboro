@@ -1,29 +1,24 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getSession, isAdmin } from "@/lib/auth";
 
-// GET /api/churches — list all churches with member counts
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const churches = await prisma.church.findMany({
       include: {
         _count: { select: { members: true } },
-        members: {
-          select: { checkedIn: true },
-        },
+        members: { select: { checkedIn: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
     type ChurchWithCounts = {
-      id: string;
-      name: string;
-      pastor: string | null;
-      phone: string | null;
-      email: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-      _count: { members: number };
-      members: { checkedIn: boolean }[];
+      id: string; name: string; pastor: string | null; phone: string | null;
+      email: string | null; createdAt: Date; updatedAt: Date;
+      _count: { members: number }; members: { checkedIn: boolean }[];
     };
 
     const result = (churches as ChurchWithCounts[]).map((church) => ({
@@ -41,17 +36,16 @@ export async function GET() {
   }
 }
 
-// POST /api/churches — create a new church
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!isAdmin(session)) return Response.json({ error: "Forbidden" }, { status: 403 });
+
     const body = await request.json();
     const { name, pastor, phone, email } = body;
 
     if (!name || !name.trim()) {
-      return Response.json(
-        { error: "Church name is required" },
-        { status: 400 }
-      );
+      return Response.json({ error: "Church name is required" }, { status: 400 });
     }
 
     const church = await prisma.church.create({
