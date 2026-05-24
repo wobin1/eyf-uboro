@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Church {
+  id        String   @id @default(cuid())
+  name      String
+  pastor    String?
+  phone     String?
+  email     String?
+  members   Member[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Member {
+  id          String    @id @default(cuid())
+  firstName   String
+  lastName    String
+  phone       String?
+  email       String?
+  ticketId    String    @unique @default(cuid())
+  checkedIn   Boolean   @default(false)
+  checkedInAt DateTime?
+  church      Church    @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  churchId    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User?
+
+  @@index([churchId])
+  @@index([ticketId])
+}
+
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(INVITEE)
+  memberId     String?   @unique  // link invitee to their Member record
+  member       Member?   @relation(fields: [memberId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum Role {
+  ADMIN
+  BOUNCER
+  INVITEE
+}
